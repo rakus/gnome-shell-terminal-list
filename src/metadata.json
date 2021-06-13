@@ -1,0 +1,8 @@
+{
+    "uuid": "term-list@r3s6.de",
+    "name": "Term-List",
+    "version": 1,
+    "minor_version": "0",
+    "description": "Menu of GNOME Terminal Tabs",
+    "shell-version": [ "40" ]
+}

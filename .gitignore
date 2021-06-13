@@ -1,0 +1,9 @@
+*.zip
+*.html
+*.deb
+*.rpm
+gschemas.compiled
+build
+*~
+node_modules/
+package-lock.json

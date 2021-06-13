@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+    <schema id="org.gnome.shell.extensions.term-list" path="/org/gnome/shell/extensions/term-list/">
+        <key name="toggle-term-list" type="as">
+            <default><![CDATA[['<Ctrl><Super>T']]]></default>
+            <summary>Hotkey to open the Term-List menu.</summary>
+        </key>
+    </schema>
+</schemalist>
