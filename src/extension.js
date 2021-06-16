@@ -17,8 +17,8 @@ const Shell = imports.gi.Shell;
 const ExtensionUtils = imports.misc.extensionUtils;
 const MySelf = ExtensionUtils.getCurrentExtension();
 
-// The D-Bus interface of SearchProvider2 implemented by Gnome-Terminal
-// as XML
+// Definition of  D-Bus interface of SearchProvider2 implemented by
+// Gnome-Terminal
 const SearchProvider2Interface = '<node>\
   <interface name="org.gnome.Shell.SearchProvider2"> \
     <method name="GetInitialResultSet"> \
@@ -57,7 +57,7 @@ let TermListMenuButton = GObject.registerClass(
     class TermListMenuButton extends PanelMenu.Button {
 
         _init() {
-            super._init(0.5, "TermList", false);
+            super._init(0.5, "Term-List", false);
 
             this.icon = new St.Icon({
                 icon_name: "utilities-terminal",
@@ -190,10 +190,12 @@ let TermListMenuButton = GObject.registerClass(
                     }
                 }
 
-                this._terminalsSubMenu.menu.addAction(metas[i]["name"], this._switch2Terminal.bind(this, metas[i]["id"]), undefined);
+                this._terminalsSubMenu.menu.addAction(metas[i]["name"],
+                    this._switch2Terminal.bind(this, metas[i]["id"]), undefined);
             }
 
             this.menu.open();
+            // open without animation
             this._terminalsSubMenu.menu.open(false);
 
             // set focus to search box

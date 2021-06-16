@@ -8,7 +8,7 @@ their title.
 
 The menu is opened on click. It starts with an input field to filter the
 entries. The search string supports `*` to match any string (including an empty
-one).  Other globbing chars are not supported. The search is case insensitive.
+one). Other globbing chars are not supported. The search is case insensitive.
 
 The Terminals are listed in the following sub-menu in no particular order. A
 sub-menu is used, so that it is rendered with a scroll bar if a lot of
@@ -35,18 +35,39 @@ a patch I would be interested.
 
 ## Installing
 
-Get the source and then just run `make install`. This will install the
-extension to your home directory below `.local/share/gnome-shell/extensions`.
+Independent of the method used to install the extension, GNOME-Shell has to be
+restarted afterwards.  If you using X11 just hit `<ALT>F2` and enter `r`. If
+you are using Wayland you need to log out and in again.
+
+After the restart the extension can be enabled with
+```
+gnome-extensions enable term-list@r3s6.de
+```
+
+Both of the following methods install the extension locally in the directory
+`~/.local/share/gnome-shell/extensions/term-list@r3s6.de`.
+
+### From Source
+Get the source and then just run `make install`.
 
 BTW: Call `make help` for all possible make targets.
 
-After that you need to restart GNOME Shell. If you using X11 just hit `<ALT>F2`
-and enter `r`. If you are using Wayland you need to log out and in again.
+### From Zip
+
+Just execute
+```
+gnome-extensions install term-list-v{version}.zip
+```
+
+If it was installed before and you want to update, use
+```
+gnome-extensions install --force term-list-v{version}.zip
+```
 
 ## How does it work?
 
-The extensions gathers the terminal tab titles by (ab-)using the dbus interface
-`org.gnome.Shell.SearchProvider2`. GNOME-Terminal implements this.
+The extensions gathers the terminal tab titles by (ab-)using the D-Bus
+interface `org.gnome.Shell.SearchProvider2`. GNOME-Terminal implements this.
 
 The search is called with an empty String, so all terminals are matched. This
 is a two step process. First the UUIDs of the matched terminals are fetched,
