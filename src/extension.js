@@ -277,7 +277,12 @@ function enable() {
     log("Term-List: enable() [Version: " + version + "]");
 
     termListMenu = new TermListMenuButton();
-    Main.panel.addToStatusArea("Term-List", termListMenu);
+
+    // place it on the left side -- even left of Activities
+    let index = Main.sessionMode.panel.left.indexOf("activities");
+    Main.panel.addToStatusArea("Term-List", termListMenu, index, "left");
+
+    // Main.panel.addToStatusArea("Term-List", termListMenu);
 }
 
 function disable() {
