@@ -10,9 +10,7 @@ The menu is opened on click or with the shortcut `<Ctrl><Super>T`. It starts
 with an input field to filter the entries. The search is case insensitive and
 supports the wildcard `*` to match any string (including an empty one).
 
-The Terminals are listed in the following sub-menu in no particular order. A
-sub-menu is used, so that it is rendered with a scroll bar if a lot of
-terminals are open.
+The Terminals are listed below the input field in no particular order.
 
 The shortcut to open the menu can be configured via `gsettings`. To reconfigure
 it to `<Ctrl><Super>W` do:
@@ -86,4 +84,12 @@ dbus-send --session --dest=org.gnome.Terminal  --print-reply=literal \
     org.gnome.Shell.SearchProvider2.GetResultMetas \
     array:string:<UUID1>,<UUID2>,...
 ```
+
+## License
+
+Terminal-List is licensed under GNU General Public License v3.
+
+The extension contains copied code from the Gnome Shell Extension
+[extension-list](https://github.com/tuberry/extension-list) (see class
+`PopupScrollMenu` in `src/extension.js`).
 

@@ -1,3 +1,11 @@
+/*
+ * Term-List Gnome Shell Extension
+ *
+ * Copyright (c) 2021 Ralf Schandl
+ *
+ * Released under GNU General Public License v3. See file LICENSE.
+ *
+ */
 
 /* Note to eslint: */
 /* exported enable, disable */
@@ -49,6 +57,44 @@ const SearchProvider2Interface = '<node>\
 // Declare the proxy class based on the interface
 const SearchProvider2Proxy = Gio.DBusProxy.makeProxyWrapper(SearchProvider2Interface);
 
+// "Stolen" from https://github.com/tuberry/extension-list (GPLv3)
+const PopupScrollMenuSection = class extends PopupMenu.PopupMenuSection {
+    constructor() {
+        super();
+
+        // take 90% of screen height (original code just substracted 100 pixel)
+        let maxHeight = Math.floor(global.display.get_size()[1] * 90 / 100);
+        this.actor = new St.ScrollView({
+            style: "max-height: %dpx".format(maxHeight),
+            style_class: "extension-list-scroll-menu",
+            hscrollbar_policy: St.PolicyType.NEVER,
+            vscrollbar_policy: St.PolicyType.NEVER,
+            clip_to_allocation: true,
+        });
+
+        this.actor.add_actor(this.box);
+        this.actor._delegate = this;
+    }
+
+    _needsScrollbar() {
+        let [, topNaturalHeight] = this._getTopMenu().actor.get_preferred_height(-1);
+        let topMaxHeight = this.actor.get_theme_node().get_max_height();
+
+        return topMaxHeight >= 0 && topNaturalHeight >= topMaxHeight;
+    }
+
+    open() {
+        let needsScrollbar = this._needsScrollbar();
+        this.actor.vscrollbar_policy = needsScrollbar ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER;
+        if(needsScrollbar) {
+            this.actor.add_style_pseudo_class("scrolled");
+        } else {
+            this.actor.remove_style_pseudo_class("scrolled");
+        }
+
+        super.open();
+    }
+};
 
 /*
  * The panel button
@@ -118,9 +164,7 @@ let TermListMenuButton = GObject.registerClass(
             this.menu.addMenuItem(searchEntryItem);
 
             // Terminals in a submenu. Only this way we might get a scrollbar when needed
-            this._terminalsSubMenu = new PopupMenu.PopupSubMenuMenuItem("GNOME Terminal Tabs", false);
-            this._terminalsSubMenu.menu.close = function (_animate) {
-            };
+            this._terminalsSubMenu = new PopupScrollMenuSection();
             this.menu.addMenuItem(this._terminalsSubMenu);
         }
 
@@ -184,7 +228,7 @@ let TermListMenuButton = GObject.registerClass(
                 return;
             }
 
-            this._terminalsSubMenu.menu.removeAll();
+            this._terminalsSubMenu.removeAll();
             this._searchEntry.set_text("");
 
             let metas = results[0];
@@ -196,13 +240,11 @@ let TermListMenuButton = GObject.registerClass(
                     }
                 }
 
-                this._terminalsSubMenu.menu.addAction(metas[i]["name"],
+                this._terminalsSubMenu.addAction(metas[i]["name"],
                     this._switch2Terminal.bind(this, metas[i]["id"]), undefined);
             }
 
             this.menu.open();
-            // open without animation
-            this._terminalsSubMenu.menu.open(false);
 
             // set focus to search box
             global.stage.set_key_focus(this._searchEntry);
@@ -222,8 +264,6 @@ let TermListMenuButton = GObject.registerClass(
          * menu content by setting the visibilty of items.
          */
         _onSearchText() {
-            // this only makes sense when the menu is open
-            this._terminalsSubMenu.menu.open(false);
 
             let searchText = this._searchEntry.get_text().toLowerCase();
 
@@ -231,12 +271,12 @@ let TermListMenuButton = GObject.registerClass(
              * Using private method PopupMenuBase._getMenuItems ... this is fragile
              */
             if(searchText === "") {
-                this._terminalsSubMenu.menu._getMenuItems().forEach(item => {
+                this._terminalsSubMenu._getMenuItems().forEach(item => {
                     item.actor.visible = true;
                 });
             } else {
                 let regex = this._glob2regex(searchText);
-                this._terminalsSubMenu.menu._getMenuItems().forEach(item => {
+                this._terminalsSubMenu._getMenuItems().forEach(item => {
                     let text = item.label.get_text().toLowerCase();
                     item.actor.visible = text.search(regex) >= 0;
                 });
@@ -264,10 +304,8 @@ let TermListMenuButton = GObject.registerClass(
          * Act on <ENTER> in search field. Select the first visible entry from the menu.
          */
         _onSearchEnter() {
-            log("Term-List: _onSearchEnter");
-            for(const item of this._terminalsSubMenu.menu._getMenuItems()) {
+            for(const item of this._terminalsSubMenu._getMenuItems()) {
                 if(item.visible) {
-                    log("Term-List: grabbing focus");
                     item.actor.grab_key_focus();
                     break;
                 }
