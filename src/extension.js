@@ -114,7 +114,9 @@ let TermListMenuButton = GObject.registerClass(
             this.menu.addMenuItem(searchEntryItem);
 
             // Terminals in a submenu. Only this way we might get a scrollbar when needed
-            this._terminalsSubMenu = new PopupMenu.PopupSubMenuMenuItem("Terminals", false);
+            this._terminalsSubMenu = new PopupMenu.PopupSubMenuMenuItem("GNOME Terminal Tabs", false);
+            this._terminalsSubMenu.menu.close = function (_animate) {
+            };
             this.menu.addMenuItem(this._terminalsSubMenu);
         }
 
