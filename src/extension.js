@@ -103,6 +103,10 @@ let TermListMenuButton = GObject.registerClass(
                 "text-changed",
                 this._onSearchText.bind(this));
 
+            this._searchEntry.get_clutter_text().connect(
+                "activate",
+                this._onSearchEnter.bind(this));
+
             // create menu entry for search entry field
             let searchEntryItem = new PopupMenu.PopupBaseMenuItem({
                 reactive: false,
@@ -214,7 +218,8 @@ let TermListMenuButton = GObject.registerClass(
         }
 
         /*
-         * Event handler for text change in search entry field.
+         * Event handler for text change in search entry field. Filters the
+         * menu content by setting the visibilty of items.
          */
         _onSearchText() {
             // this only makes sense when the menu is open
@@ -253,6 +258,20 @@ let TermListMenuButton = GObject.registerClass(
             }
 
             return new RegExp(reStr);
+        }
+
+        /*
+         * Act on <ENTER> in search field. Select the first visible entry from the menu.
+         */
+        _onSearchEnter() {
+            log("Term-List: _onSearchEnter");
+            for(const item of this._terminalsSubMenu.menu._getMenuItems()) {
+                if(item.visible) {
+                    log("Term-List: grabbing focus");
+                    item.actor.grab_key_focus();
+                    break;
+                }
+            }
         }
 
 
