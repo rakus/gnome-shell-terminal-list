@@ -312,7 +312,6 @@ let TermListMenuButton = GObject.registerClass(
             }
         }
 
-
         /*
          * Stop. Clean the menu.
          */
@@ -337,11 +336,20 @@ function enable() {
 
     termListMenu = new TermListMenuButton();
 
-    // place it on the left side -- even left of Activities
-    let index = Main.sessionMode.panel.left.indexOf("activities");
-    Main.panel.addToStatusArea("Term-List", termListMenu, index, "left");
+    let settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.term-list");
 
-    // Main.panel.addToStatusArea("Term-List", termListMenu);
+    let activitiesIndex = Main.sessionMode.panel.left.indexOf("activities");
+
+    let location = settings.get_string("panel-location");
+    if(location === "far-left") {
+        // place it on the left side -- even left of Activities
+        Main.panel.addToStatusArea("Term-List", termListMenu, activitiesIndex, "left");
+    } else if(location === "left") {
+        // place it on the left side -- right of Activities
+        Main.panel.addToStatusArea("Term-List", termListMenu, activitiesIndex + 1, "left");
+    } else {
+        Main.panel.addToStatusArea("Term-List", termListMenu);
+    }
 }
 
 function disable() {

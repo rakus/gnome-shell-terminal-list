@@ -2,7 +2,8 @@
 # Gnome Shell Extension Terminal-List
 
 Adds a panel button with a menu that lists the open GNOME-Terminal tabs with
-their title. The button is located on the far left, even left of "Activities".
+their title. By default the button is located on the far left, even left of
+"Activities".
 
 ## Menu
 
@@ -12,15 +13,7 @@ supports the wildcard `*` to match any string (including an empty one).
 
 The Terminals are listed below the input field in no particular order.
 
-The shortcut to open the menu can be configured via `gsettings`. To reconfigure
-it to `<Ctrl><Super>W` do:
-```
-gsettings  \
-    --schemadir ~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas \
-    set org.gnome.shell.extensions.term-list toggle-term-list "['<Ctrl><Super>W']"
-```
-
-## Restrictions
+### Restrictions
 
 Only the title of the GNOME-Terminal tab is available. No information which
 tabs are together in the same window. Let alone on which virtual desktop they
@@ -62,6 +55,47 @@ If it was installed before and you want to update, use
 gnome-extensions install --force term-list-v{version}.zip
 ```
 
+## Configuration
+
+Configuration is currently only possible via `gsettings` or `dconf-editor`.
+
+Start `dconf-editor` with:
+```
+GSETTINGS_SCHEMA_DIR=~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas dconf-editor
+```
+
+### Keyboard Shortcut
+
+The shortcut to open the menu can be configured via `gsettings`. To reconfigure
+it to `<Ctrl><Super>W` do:
+```
+gsettings  \
+    --schemadir ~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas \
+    set org.gnome.shell.extensions.term-list toggle-term-list "['<Ctrl><Super>W']"
+```
+
+### Location on the Panel
+
+As said, the default location for the extension icon is on the far left. This
+can be changed via `gsettings`.
+```
+gsettings  \
+    --schemadir ~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas \
+    set org.gnome.shell.extensions.term-list panel-location "far-left"
+
+gsettings  \
+    --schemadir ~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas \
+    set org.gnome.shell.extensions.term-list panel-location "left"
+
+gsettings  \
+    --schemadir ~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas \
+    set org.gnome.shell.extensions.term-list panel-location "right"
+```
+
+* `far-left`: Left side of the panel, even left of "Activities".
+* `left`: Left side of the panel, but right of "Activities".
+* `right`: On the right side of the panel.
+
 ## How does it work?
 
 The extensions gathers the terminal tab titles by (ab)using the D-Bus interface
@@ -91,5 +125,5 @@ Terminal-List is licensed under GNU General Public License v3.
 
 The extension contains copied code from the Gnome Shell Extension
 [extension-list](https://github.com/tuberry/extension-list) (see class
-`PopupScrollMenu` in `src/extension.js`).
+`PopupScrollMenuSection` in `src/extension.js`).
 

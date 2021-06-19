@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
+    <enum id="org.gnome.shell.extensions.term-list.Location">
+        <value value="0" nick="far-left"/>
+        <value value="1" nick="left"/>
+        <value value="2" nick="right"/>
+    </enum>
     <schema id="org.gnome.shell.extensions.term-list" path="/org/gnome/shell/extensions/term-list/">
         <key name="toggle-term-list" type="as">
             <default><![CDATA[['<Ctrl><Super>T']]]></default>
             <summary>Hotkey to open the Term-List menu.</summary>
+        </key>
+        <key name="panel-location" enum="org.gnome.shell.extensions.term-list.Location">
+            <default>'far-left'</default>
+            <summary>Location of the Term-List in the Panel.</summary>
         </key>
     </schema>
 </schemalist>
