@@ -1,6 +1,12 @@
 #
 # Makefile for term-list
 #
+# Configuration is via src/metadata.json
+# Used entries:
+#   - uuid
+#   - version
+#   - minor_version (optional)
+#
 # Requires GNU make
 #
 
@@ -9,12 +15,16 @@ ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # Phony targets represents recipes, not files
 .PHONY: help zip html clean  install diff_installed check
 
-EXT_NAME    := term-list
-EXT_UUID    := ${EXT_NAME}@r3s6.de
-EXT_VERSION := $(shell grep '"version":' src/metadata.json | tr -dc .0-9 )
+# extract data from metadata.json
+EXT_UUID       := $(shell grep '"uuid"' src/metadata.json  | cut -d: -f2 | tr -d '" ,')
+EXT_NAME       := $(firstword $(subst @, ,$(EXT_UUID)))
+EXT_VERSION    := $(shell grep '"version":' src/metadata.json | tr -dc .0-9 )
 EXT_MINVERSION := $(shell grep '"minor_version"' src/metadata.json  | cut -d: -f2 | tr -d '" ,')
-EXT_ZIP     := ${EXT_NAME}-v${EXT_VERSION}.${EXT_MINVERSION}.zip
+ifneq "${EXT_MINVERSION}" ""
+	EXT_MINVERSION := .${EXT_MINVERSION}
+endif
 
+EXT_ZIP        := ${EXT_NAME}-v${EXT_VERSION}${EXT_MINVERSION}.zip
 LOCAL_EXT_INST_DIR = ${HOME}/.local/share/gnome-shell/extensions/${EXT_UUID}
 
 JAVASCRIPT := $(wildcard src/*.js)
@@ -57,21 +67,18 @@ README.html: README.md
 %.html: %.md
 	marked --gfm --tables -o $@ $^
 
-install: ${GSCHEMAS} check               ## Install/update the extension locally
+install: ${ZIP_CONTENT} check            ## Install/update the extension locally
 	@mkdir -p ${LOCAL_EXT_INST_DIR}
-	@mkdir -p ${LOCAL_EXT_INST_DIR}/schemas
-	@cp -vf ${SRC_FILES}           ${LOCAL_EXT_INST_DIR}
-	@cp -vf ${SCHEMAS} ${GSCHEMAS} ${LOCAL_EXT_INST_DIR}/schemas
+	@(cd src && cp -vf --parent ${ZIP_CONTENT:src/%=%} "${LOCAL_EXT_INST_DIR}")
 
 ${GSCHEMAS}: ${SCHEMAS}
 	glib-compile-schemas --strict src/schemas
 
 diff_installed:                         ## Diff agains locally installed extension
-	@diff -x '*.sh' -x '*~' -x src -r ${LOCAL_EXT_INST_DIR} src/
+	@diff -x '*.sh' -x '*~' -x 'org.gnome.shell.extensions.*.gschema.xml' -r ${LOCAL_EXT_INST_DIR} src/
 
 clean:                                  ## Clean up
 	rm -rf ${EXT_NAME}-v*.zip *.html ${GSCHEMAS}
-
 
 help:                                   ## Prints targets with help text
 	@cat $(MAKEFILE_LIST) | grep -E '^[a-zA-Z_-]+:.*?## .*$$' | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%s\033[0m\n    %s\n", $$1, $$2}'
