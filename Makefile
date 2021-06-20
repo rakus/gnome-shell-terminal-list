@@ -30,15 +30,17 @@ LOCAL_EXT_INST_DIR = ${HOME}/.local/share/gnome-shell/extensions/${EXT_UUID}
 JAVASCRIPT := $(wildcard src/*.js)
 METADATA   := src/metadata.json
 CSS        := $(wildcard src/*.css)
-SRC_FILES  := ${JAVASCRIPT} ${METADATA} ${CSS}
+UI_FILES   := $(wildcard src/*.ui)
+SRC_FILES  := ${JAVASCRIPT} ${METADATA} ${CSS} ${UI_FILES}
 SCHEMAS    := $(wildcard src/schemas/*.xml)
 
 GSCHEMAS   := src/schemas/gschemas.compiled
 
 ZIP_CONTENT := ${SRC_FILES} ${GSCHEMAS}
 
-ESLINT_AVAILABLE := $(shell npx --no-install eslint  2> /dev/null && echo "GOT IT")
-JSONPP_AVAILABLE := $(shell which json_pp 2> /dev/null)
+ESLINT_AVAILABLE     := $(shell npx --no-install eslint  2> /dev/null && echo "GOT IT")
+JSONPP_AVAILABLE     := $(shell which json_pp 2> /dev/null)
+GTKBUILDER_AVAILABLE := $(shell which gtk-builder-tool 2> /dev/null)
 
 all: check zip                           ## Run 'check' and 'zip'
 
@@ -49,6 +51,11 @@ ifdef JSONPP_AVAILABLE
 	json_pp < ${METADATA} >/dev/null
 else
 	@echo "WARNING: json_pp not available, metadata.json not validated"
+endif
+ifdef GTKBUILDER_AVAILABLE
+	gtk-builder-tool validate ${UI_FILES}
+else
+	@echo "WARNING: gtk-builder-tool not available, ui files not validated"
 endif
 ifdef ESLINT_AVAILABLE
 	npx --no-install eslint -f unix ${JAVASCRIPT}

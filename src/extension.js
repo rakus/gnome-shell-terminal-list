@@ -127,7 +127,7 @@ let TermListMenuButton = GObject.registerClass(
 
             Main.wm.addKeybinding("toggle-term-list", this._settings,
                 Meta.KeyBindingFlags.IGNORE_AUTOREPEAT,
-                Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,
+                Shell.ActionMode.NORMAL,
                 this._toggleMenu.bind(this));
         }
 
@@ -164,7 +164,6 @@ let TermListMenuButton = GObject.registerClass(
             this._searchEntry.get_clutter_text().connect(
                 "key-focus-in",
                 this._onSearchFocusIn.bind(this));
-
 
             // create menu entry for search entry field
             let searchEntryItem = new PopupMenu.PopupBaseMenuItem({
@@ -246,7 +245,6 @@ let TermListMenuButton = GObject.registerClass(
 
                 this._terminalsSubMenu.addAction(metaData[i]["name"],
                     this._switch2Terminal.bind(this, metaData[i]["id"]), undefined);
-
             }
 
             this.menu.open();

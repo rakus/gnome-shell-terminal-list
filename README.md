@@ -7,7 +7,7 @@ their title. By default the button is located on the far left, even left of
 
 ## Menu
 
-The menu is opened on click or with the shortcut `<Ctrl><Super>T`. It starts
+The menu is opened on click or with the shortcut `Ctrl+Super+T`. It starts
 with an input field to filter the entries. The search is case insensitive and
 supports the wildcard `*` to match any string (including an empty one).
 
@@ -21,13 +21,12 @@ are displayed.
 
 So: No sorting by window or virtual desktop.
 
-I'm __not__ actively searching for a solution, but if someone wants to provides
-a patch I would be interested.
+I'm _not_ actively searching for a solution for that.
 
 ## Installing
 
 Independent of the method used to install the extension, GNOME-Shell has to be
-restarted afterwards.  If you using X11 just hit `<ALT>F2` and enter `r`. If
+restarted afterwards.  If you using X11 just hit `ALT+F2` and enter `r`. If
 you are using Wayland you need to log out and in again.
 
 After the restart the extension can be enabled with
@@ -57,44 +56,16 @@ gnome-extensions install --force term-list-v{version}.zip
 
 ## Configuration
 
-Configuration is currently only possible via `gsettings` or `dconf-editor`.
+Start the configuration dialog via `gnome-extensions-app` or
+`gnome-extensions prefs term-list@r3s6.de`.
 
-Start `dconf-editor` with:
-```
-GSETTINGS_SCHEMA_DIR=~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas dconf-editor
-```
-
-### Keyboard Shortcut
-
-The shortcut to open the menu can be configured via `gsettings`. To reconfigure
-it to `<Ctrl><Super>W` do:
-```
-gsettings  \
-    --schemadir ~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas \
-    set org.gnome.shell.extensions.term-list toggle-term-list "['<Ctrl><Super>W']"
-```
-
-### Location on the Panel
-
-As said, the default location for the extension icon is on the far left. This
-can be changed via `gsettings`.
-```
-gsettings  \
-    --schemadir ~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas \
-    set org.gnome.shell.extensions.term-list panel-location "far-left"
-
-gsettings  \
-    --schemadir ~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas \
-    set org.gnome.shell.extensions.term-list panel-location "left"
-
-gsettings  \
-    --schemadir ~/.local/share/gnome-shell/extensions/term-list@r3s6.de/schemas \
-    set org.gnome.shell.extensions.term-list panel-location "right"
-```
-
+_Icon Location_ defines where the icon should be displayed in the top bar.
 * `far-left`: Left side of the panel, even left of "Activities".
 * `left`: Left side of the panel, but right of "Activities".
-* `right`: On the right side of the panel.
+* `right`: Somewhere on the right side of the panel.
+
+_Menu Shortcut_ defines the shortcut to open the terminals menu. Default is
+`Ctrl+Super+T`.
 
 ## How does it work?
 
