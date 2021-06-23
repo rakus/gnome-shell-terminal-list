@@ -62,7 +62,7 @@ const PopupScrollMenuSection = class extends PopupMenu.PopupMenuSection {
     constructor() {
         super();
 
-        // take 90% of screen height (original code just substracted 100 pixel)
+        // take max 90% of screen height
         let maxHeight = Math.floor(global.display.get_size()[1] * 90 / 100);
         this.actor = new St.ScrollView({
             style: "max-height: %dpx".format(maxHeight),
@@ -151,7 +151,20 @@ let TermListMenuButton = GObject.registerClass(
 
             this._searchEntry.get_clutter_text().connect(
                 "activate",
-                this._onSearchEnter.bind(this));
+                this._searchJumpToFirstItem.bind(this));
+
+            this._searchEntry.get_clutter_text().connect(
+                "key-press-event",
+                this._onSearchFieldKey.bind(this));
+
+            this._searchEntry.get_clutter_text().connect(
+                "key-focus-out",
+                this._onSearchFocusOut.bind(this));
+
+            this._searchEntry.get_clutter_text().connect(
+                "key-focus-in",
+                this._onSearchFocusIn.bind(this));
+
 
             // create menu entry for search entry field
             let searchEntryItem = new PopupMenu.PopupBaseMenuItem({
@@ -179,69 +192,61 @@ let TermListMenuButton = GObject.registerClass(
             return Clutter.EVENT_PROPAGATE;
         }
 
+        /*
+         * Open menue if it's close - Close it if it's open.
+         */
         _toggleMenu() {
 
             if(!this.menu.isOpen) {
                 // Get all terminal tabs by searching for 'nothing' which matches
                 // everything
                 this.spProxy.GetInitialResultSetRemote([], (result, error) => {
-                    this._getInitialResultSetResult(result, error);
+                    if(!error && result[0].length > 0) {
+                        this._requestTermTabsMetadata(result[0]);
+                    } else if(!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
+                        log("Term-List: Error getting Terminal List Ids: " + String(error));
+                        Main.notify("Error getting Terminal List", String(error));
+                    }
                 });
             } else {
                 this.menu.close();
             }
-
         }
 
         /*
-         * Receives the uuids of all tabs.
+         * Receives the uuids of all tabs and requests the meta data for them.
          */
-        _getInitialResultSetResult(results, error) {
-
-            if(error) {
-                if(!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
+        _requestTermTabsMetadata(ids) {
+            // Get meta information for all tabs
+            this.spProxy.GetResultMetasRemote(ids, (result, error) => {
+                if(!error) {
+                    this._createTermTabsMenu(result[0]);
+                } else if(!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
                     log("Term-List: Error getting Terminal List Ids: " + String(error));
                     Main.notify("Error getting Terminal List", String(error));
                 }
-                return;
-            }
-
-            let ids = results[0];
-
-            // Get meta information for all tabs
-            this.spProxy.GetResultMetasRemote(ids, (metaResults, metaError) => {
-                this._getResultMetasResult(metaResults, metaError);
             });
         }
 
         /*
          * Receives the meta information for all tabs and creates
-         * menue entries for it. Finally the menu is opened.
+         * menue entries for it. Finally open the menu.
          */
-        _getResultMetasResult(results, error) {
-
-            if(error) {
-                if(!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
-                    log("Term-List: Error getting Terminal List Meta: " + String(error));
-                    Main.notify("Error getting Terminal List", String(error));
-                }
-                return;
-            }
-
+        _createTermTabsMenu(metaData) {
             this._terminalsSubMenu.removeAll();
             this._searchEntry.set_text("");
 
-            let metas = results[0];
-            for(let i = 0; i < metas.length; i++) {
-                for(let prop in metas[i]) {
+            for(let i = 0; i < metaData.length; i++) {
+                for(let prop in metaData[i]) {
                     // All but the icon need unpacking
                     if(prop !== "icon") {
-                        metas[i][prop] = metas[i][prop].deep_unpack();
+                        metaData[i][prop] = metaData[i][prop].deep_unpack();
                     }
                 }
 
-                this._terminalsSubMenu.addAction(metas[i]["name"],
-                    this._switch2Terminal.bind(this, metas[i]["id"]), undefined);
+                this._terminalsSubMenu.addAction(metaData[i]["name"],
+                    this._switch2Terminal.bind(this, metaData[i]["id"]), undefined);
+
             }
 
             this.menu.open();
@@ -264,7 +269,6 @@ let TermListMenuButton = GObject.registerClass(
          * menu content by setting the visibilty of items.
          */
         _onSearchText() {
-
             let searchText = this._searchEntry.get_text().toLowerCase();
 
             /*
@@ -283,6 +287,9 @@ let TermListMenuButton = GObject.registerClass(
             }
         }
 
+        /*
+         * Filter string to regex. Only supports wildcard '*'.
+         */
         _glob2regex(glob) {
             let reStr = "";
             for(var i = 0; i < glob.length; i++) {
@@ -301,13 +308,67 @@ let TermListMenuButton = GObject.registerClass(
         }
 
         /*
-         * Act on <ENTER> in search field. Select the first visible entry from the menu.
+         * Pressing Down, Up, Tab or Shift-Tab in search box leaves search box.
          */
-        _onSearchEnter() {
+        _onSearchFieldKey(actor, event) {
+            let key = event.get_key_symbol();
+            if(key === Clutter.KEY_Down || key === Clutter.KEY_Tab) {
+                this._searchJumpToFirstItem();
+                return Clutter.EVENT_STOP;
+            } else if(key === Clutter.KEY_Up || key === Clutter.KEY_ISO_Left_Tab) {
+                this._searchJumpToLastItem();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        }
+
+
+        /*
+         * While the search input field has focus, the menu items are not
+         * allowed to focus.
+         * When the mouse is on the menu, the focus can't move away from the
+         * search input field.
+         */
+        _onSearchFocusIn() {
+            this._terminalsSubMenu._getMenuItems().forEach(entry => {
+                entry.can_focus = false;
+            });
+        }
+
+        /*
+         * Leaving the search input field, the menu items should now be
+         * focusable again.
+         * Needed to allow navigation with up/down arrow.
+         */
+        _onSearchFocusOut() {
+            this._terminalsSubMenu._getMenuItems().forEach(entry => {
+                entry.can_focus = true;
+            });
+        }
+
+        /*
+         * Focus on first visible entry from the menu.
+         */
+        _searchJumpToFirstItem() {
             for(const item of this._terminalsSubMenu._getMenuItems()) {
                 if(item.visible) {
                     item.actor.grab_key_focus();
                     break;
+                }
+            }
+        }
+
+        /*
+         * Focus on last visible entry from the menu
+         */
+        _searchJumpToLastItem() {
+            let itemArray = this._terminalsSubMenu._getMenuItems();
+            if(itemArray.length > 0) {
+                for(var i = itemArray.length - 1;  i >= 0;  i--) {
+                    if(itemArray[i].visible) {
+                        itemArray[i].actor.grab_key_focus();
+                        break;
+                    }
                 }
             }
         }
