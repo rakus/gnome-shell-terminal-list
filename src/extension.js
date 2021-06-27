@@ -138,7 +138,7 @@ let TermListMenuButton = GObject.registerClass(
                 name: "searchEntry",
                 style_class: "search-entry",
                 can_focus: true,
-                hint_text: "Type here to search...",
+                hint_text: "Type here to filter...",
                 track_hover: true,
                 x_expand: true,
                 y_expand: true,
@@ -149,13 +149,15 @@ let TermListMenuButton = GObject.registerClass(
                 "text-changed",
                 this._onSearchText.bind(this));
 
+            // connect entry field <ENTER>
             this._searchEntry.get_clutter_text().connect(
                 "activate",
-                this._searchJumpToFirstItem.bind(this));
+                this._focusFirstItem.bind(this));
 
+            // entry field handler for special keys (Up, Down, Tab)
             this._searchEntry.get_clutter_text().connect(
                 "key-press-event",
-                this._onSearchFieldKey.bind(this));
+                this._onSearchFieldKeyEvent.bind(this));
 
             this._searchEntry.get_clutter_text().connect(
                 "key-focus-out",
@@ -175,7 +177,7 @@ let TermListMenuButton = GObject.registerClass(
             // add search entry to menu
             this.menu.addMenuItem(searchEntryItem);
 
-            // Terminals in a submenu. Only this way we might get a scrollbar when needed
+            // Terminals in scrollable menu section. Scrollbar if needed.
             this._terminalsSubMenu = new PopupScrollMenuSection();
             this.menu.addMenuItem(this._terminalsSubMenu);
         }
@@ -197,8 +199,8 @@ let TermListMenuButton = GObject.registerClass(
         _toggleMenu() {
 
             if(!this.menu.isOpen) {
-                // Get all terminal tabs by searching for 'nothing' which matches
-                // everything
+                // Get all terminal tabs by searching for 'nothing' which
+                // matches everything
                 this.spProxy.GetInitialResultSetRemote([], (result, error) => {
                     if(!error && result[0].length > 0) {
                         this._requestTermTabsMetadata(result[0]);
@@ -213,7 +215,8 @@ let TermListMenuButton = GObject.registerClass(
         }
 
         /*
-         * Receives the uuids of all tabs and requests the meta data for them.
+         * Called with  the uuids of all tabs and requests the meta data for
+         * them.
          */
         _requestTermTabsMetadata(ids) {
             // Get meta information for all tabs
@@ -228,8 +231,8 @@ let TermListMenuButton = GObject.registerClass(
         }
 
         /*
-         * Receives the meta information for all tabs and creates
-         * menue entries for it. Finally open the menu.
+         * Called with the meta information for all tabs and creates menue
+         * entries for it. Finally open the menu.
          */
         _createTermTabsMenu(metaData) {
             this._terminalsSubMenu.removeAll();
@@ -308,13 +311,13 @@ let TermListMenuButton = GObject.registerClass(
         /*
          * Pressing Down, Up, Tab or Shift-Tab in search box leaves search box.
          */
-        _onSearchFieldKey(actor, event) {
+        _onSearchFieldKeyEvent(actor, event) {
             let key = event.get_key_symbol();
             if(key === Clutter.KEY_Down || key === Clutter.KEY_Tab) {
-                this._searchJumpToFirstItem();
+                this._focusFirstItem();
                 return Clutter.EVENT_STOP;
             } else if(key === Clutter.KEY_Up || key === Clutter.KEY_ISO_Left_Tab) {
-                this._searchJumpToLastItem();
+                this._focusLastItem();
                 return Clutter.EVENT_STOP;
             }
             return Clutter.EVENT_PROPAGATE;
@@ -324,8 +327,8 @@ let TermListMenuButton = GObject.registerClass(
         /*
          * While the search input field has focus, the menu items are not
          * allowed to focus.
-         * When the mouse is on the menu, the focus can't move away from the
-         * search input field.
+         * Prevents moving the focus from the input field if the mouse is on
+         * the menu.
          */
         _onSearchFocusIn() {
             this._terminalsSubMenu._getMenuItems().forEach(entry => {
@@ -347,7 +350,7 @@ let TermListMenuButton = GObject.registerClass(
         /*
          * Focus on first visible entry from the menu.
          */
-        _searchJumpToFirstItem() {
+        _focusFirstItem() {
             for(const item of this._terminalsSubMenu._getMenuItems()) {
                 if(item.visible) {
                     item.actor.grab_key_focus();
@@ -359,7 +362,7 @@ let TermListMenuButton = GObject.registerClass(
         /*
          * Focus on last visible entry from the menu
          */
-        _searchJumpToLastItem() {
+        _focusLastItem() {
             let itemArray = this._terminalsSubMenu._getMenuItems();
             if(itemArray.length > 0) {
                 for(var i = itemArray.length - 1;  i >= 0;  i--) {
@@ -372,7 +375,7 @@ let TermListMenuButton = GObject.registerClass(
         }
 
         /*
-         * Stop. Clean the menu.
+         * Stop. Remove registered key bindings and event handler.
          */
         stop() {
 
@@ -402,7 +405,8 @@ function enable() {
         // place it on the far-left side
         Main.panel.addToStatusArea("Term-List", termListMenu, 0, "left");
     } else if(location === "left") {
-        // place it on the left side -- right of Activities
+        // place it on the left side -- left of the application menu
+        // If application menu is not available, rightmost on the left.
         let appMenuIndex = Main.sessionMode.panel.left.indexOf("appMenu");
         Main.panel.addToStatusArea("Term-List", termListMenu, appMenuIndex, "left");
     } else {
