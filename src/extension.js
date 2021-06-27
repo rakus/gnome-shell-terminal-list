@@ -397,15 +397,14 @@ function enable() {
 
     let settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.term-list");
 
-    let activitiesIndex = Main.sessionMode.panel.left.indexOf("activities");
-
     let location = settings.get_string("panel-location");
     if(location === "far-left") {
-        // place it on the left side -- even left of Activities
-        Main.panel.addToStatusArea("Term-List", termListMenu, activitiesIndex, "left");
+        // place it on the far-left side
+        Main.panel.addToStatusArea("Term-List", termListMenu, 0, "left");
     } else if(location === "left") {
         // place it on the left side -- right of Activities
-        Main.panel.addToStatusArea("Term-List", termListMenu, activitiesIndex + 1, "left");
+        let appMenuIndex = Main.sessionMode.panel.left.indexOf("appMenu");
+        Main.panel.addToStatusArea("Term-List", termListMenu, appMenuIndex, "left");
     } else {
         Main.panel.addToStatusArea("Term-List", termListMenu);
     }

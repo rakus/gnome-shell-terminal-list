@@ -60,8 +60,8 @@ Start the configuration dialog via `gnome-extensions-app` or
 `gnome-extensions prefs term-list@r3s6.de`.
 
 _Icon Location_ defines where the icon should be displayed in the top bar.
-* `far-left`: Left side of the panel, even left of "Activities".
-* `left`: Left side of the panel, but right of "Activities".
+* `far-left`: Far-left side of the panel, even left of "Activities".
+* `left`: Left side of the panel, left of application menu.
 * `right`: Somewhere on the right side of the panel.
 
 _Menu Shortcut_ defines the shortcut to open the terminals menu. Default is
