@@ -16,15 +16,15 @@ ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 .PHONY: help zip html clean  install diff_installed check
 
 # extract data from metadata.json
-EXT_UUID       := $(shell grep '"uuid"' src/metadata.json  | cut -d: -f2 | tr -d '" ,')
+EXT_UUID       := $(shell jq -r ".uuid" src/metadata.json)
 EXT_NAME       := $(firstword $(subst @, ,$(EXT_UUID)))
-EXT_VERSION    := $(shell grep '"version":' src/metadata.json | tr -dc .0-9 )
-EXT_MINVERSION := $(shell grep '"minor_version"' src/metadata.json  | cut -d: -f2 | tr -d '" ,')
-ifneq "${EXT_MINVERSION}" ""
-	EXT_MINVERSION := .${EXT_MINVERSION}
+EXT_VERSION    := $(shell jq ".version" src/metadata.json)
+EXT_MINVERSION := $(shell jq -r ".minor_version" src/metadata.json)
+ifneq "${EXT_VERSION}" ""
+	EXT_VERSION := ${EXT_VERSION}.${EXT_MINVERSION}
 endif
 
-EXT_ZIP        := ${EXT_NAME}-v${EXT_VERSION}${EXT_MINVERSION}.zip
+EXT_ZIP        := ${EXT_NAME}-v${EXT_VERSION}.zip
 LOCAL_EXT_INST_DIR = ${HOME}/.local/share/gnome-shell/extensions/${EXT_UUID}
 
 JAVASCRIPT := $(wildcard src/*.js)
@@ -46,7 +46,7 @@ all: check zip                           ## Run 'check' and 'zip'
 
 zip: ${EXT_ZIP}                          ## Build gnome shell extension installable zip
 
-check:                                   ## Run checks (json_pp, eslint)
+check:                                   ## Run checks (json_pp, eslint, gtk-builder-tool)
 ifdef JSONPP_AVAILABLE
 	json_pp < ${METADATA} >/dev/null
 else
@@ -62,6 +62,11 @@ ifdef ESLINT_AVAILABLE
 else
 	@echo "WARNING: eslint not available, no static code check"
 endif
+
+print-metadata:                          ## Print data parsed from src/metadata.json for review
+	@echo "Extension Name:    ${EXT_NAME}"
+	@echo "Extension UUID:    ${EXT_UUID}"
+	@echo "Extension Version: ${EXT_VERSION}"
 
 ${EXT_ZIP}: ${ZIP_CONTENT}
 	@rm -f $@
