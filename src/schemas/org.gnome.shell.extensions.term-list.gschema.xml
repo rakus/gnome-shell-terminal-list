@@ -9,10 +9,19 @@
         <key name="toggle-term-list" type="as">
             <default><![CDATA[['<Ctrl><Super>T']]]></default>
             <summary>Hotkey to open the Term-List menu.</summary>
+            <description>The keyboard shortcut to open the Term-List menu. Default: Ctrl+Super+T</description>
         </key>
         <key name="panel-location" enum="org.gnome.shell.extensions.term-list.Location">
             <default>'far-left'</default>
             <summary>Location of the Term-List in the Panel.</summary>
+            <description>
+                This determines where the icon of the extension should be placed.
+                'far-left' is on the left edge of the display.
+                'left' is on the left side, left of the application menu.
+                'right' is on the right side.
+                Final placement might be different, depending on extensions enabled after Term-List.
+                Default: 'far-left'
+            </description>
         </key>
     </schema>
 </schemalist>

@@ -60,9 +60,12 @@ Start the configuration dialog via `gnome-extensions-app` or
 `gnome-extensions prefs term-list@r3s6.de`.
 
 _Icon Location_ defines where the icon should be displayed in the top bar.
-* `far-left`: Far-left side of the panel, even left of "Activities".
+* `far-left`: Far-left edge of the panel.
 * `left`: Left side of the panel, left of application menu.
 * `right`: Somewhere on the right side of the panel.
+
+Note that the final placement might be different, depending on extensions
+enabled after Term-List.
 
 _Menu Shortcut_ defines the shortcut to open the terminals menu. Default is
 `Ctrl+Super+T`.
@@ -89,6 +92,9 @@ dbus-send --session --dest=org.gnome.Terminal  --print-reply=literal \
     org.gnome.Shell.SearchProvider2.GetResultMetas \
     array:string:<UUID1>,<UUID2>,...
 ```
+
+It is to be feared, that the Gnome-Terminal team will one day disallow
+searching with an empty string. Then this extension is toast.
 
 ## License
 
