@@ -202,8 +202,13 @@ let TermListMenuButton = GObject.registerClass(
                 // Get all terminal tabs by searching for 'nothing' which
                 // matches everything
                 this.spProxy.GetInitialResultSetRemote([], (result, error) => {
-                    if(!error && result[0].length > 0) {
-                        this._requestTermTabsMetadata(result[0]);
+                    if(!error) {
+                        if(result[0].length > 0) {
+                            this._requestTermTabsMetadata(result[0]);
+                        } else {
+                            // open empty menu
+                            this._createTermTabsMenu([]);
+                        }
                     } else if(!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
                         log("Term-List: Error getting Terminal List Ids: " + String(error));
                         Main.notify("Error getting Terminal List", String(error));
