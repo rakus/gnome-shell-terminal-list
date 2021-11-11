@@ -15,6 +15,12 @@ ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # Phony targets represents recipes, not files
 .PHONY: help zip html clean  install diff_installed check
 
+# check that jq is available
+JQ_AVAILABLE := $(shell command -v jq 2>/dev/null)
+ifeq "${JQ_AVAILABLE}" ""
+$(error "jq is not available -- please install jq")
+endif
+
 # extract data from metadata.json
 EXT_UUID       := $(shell jq -r ".uuid" src/metadata.json)
 EXT_NAME       := $(firstword $(subst @, ,$(EXT_UUID)))
@@ -22,6 +28,10 @@ EXT_VERSION    := $(shell jq ".version" src/metadata.json)
 EXT_MINVERSION := $(shell jq -r ".minor_version" src/metadata.json)
 ifneq "${EXT_VERSION}" ""
 	EXT_VERSION := ${EXT_VERSION}.${EXT_MINVERSION}
+endif
+
+ifeq "${EXT_UUID}" ""
+$(error "Failed to extract extension UUID from src/metadata.json -- can't continue")
 endif
 
 EXT_ZIP        := ${EXT_NAME}-v${EXT_VERSION}.zip
