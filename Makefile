@@ -13,7 +13,7 @@
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 # Phony targets represents recipes, not files
-.PHONY: help zip html clean  install diff_installed check
+.PHONY: help zip html clean  install diff-installed check
 
 # check that jq is available
 JQ_AVAILABLE := $(shell command -v jq 2>/dev/null)
@@ -96,7 +96,7 @@ install: ${ZIP_CONTENT} check            ## Install/update the extension locally
 ${GSCHEMAS}: ${SCHEMAS}
 	glib-compile-schemas --strict src/schemas
 
-diff_installed:                         ## Diff agains locally installed extension
+diff-installed:                         ## Diff agains locally installed extension
 	@diff -x '*.sh' -x '*~' -x 'org.gnome.shell.extensions.*.gschema.xml' -r ${LOCAL_EXT_INST_DIR} src/
 
 clean:                                  ## Clean up
