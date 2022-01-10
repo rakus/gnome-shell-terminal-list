@@ -26,12 +26,18 @@ EXT_UUID       := $(shell jq -r ".uuid" src/metadata.json)
 EXT_NAME       := $(firstword $(subst @, ,$(EXT_UUID)))
 EXT_VERSION    := $(shell jq ".version" src/metadata.json)
 EXT_MINVERSION := $(shell jq -r ".minor_version" src/metadata.json)
-ifneq "${EXT_VERSION}" ""
-	EXT_VERSION := ${EXT_VERSION}.${EXT_MINVERSION}
-endif
 
 ifeq "${EXT_UUID}" ""
 $(error "Failed to extract extension UUID from src/metadata.json -- can't continue")
+endif
+ifeq "${EXT_NAME}" ""
+$(error "Failed to extract extension NAME via UUID from src/metadata.json -- can't continue")
+endif
+ifeq "${EXT_VERSION}" ""
+$(error "Failed to extract extension VERSION from src/metadata.json -- can't continue")
+endif
+ifneq "${EXT_MINVERSION}" ""
+	EXT_VERSION := ${EXT_VERSION}.${EXT_MINVERSION}
 endif
 
 EXT_ZIP        := ${EXT_NAME}-v${EXT_VERSION}.zip
