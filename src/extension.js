@@ -84,11 +84,11 @@ const PopupScrollMenuSection = class extends PopupMenu.PopupMenuSection {
     }
 
     open() {
-        let needsScrollbar = this._needsScrollbar();
-        this.actor.vscrollbar_policy = needsScrollbar ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER;
-        if(needsScrollbar) {
+        if(this._needsScrollbar()) {
+            this.actor.vscrollbar_policy = St.PolicyType.AUTOMATIC;
             this.actor.add_style_pseudo_class("scrolled");
         } else {
+            this.actor.vscrollbar_policy = St.PolicyType.NEVER;
             this.actor.remove_style_pseudo_class("scrolled");
         }
 
