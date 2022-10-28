@@ -22,10 +22,10 @@ $(error "jq is not available -- please install jq")
 endif
 
 # extract data from metadata.json
-EXT_UUID       := $(shell jq -r ".uuid" src/metadata.json)
+EXT_UUID       := $(shell jq -er 'select(.uuid != null)|.uuid' src/metadata.json)
 EXT_NAME       := $(firstword $(subst @, ,$(EXT_UUID)))
-EXT_VERSION    := $(shell jq ".version" src/metadata.json)
-EXT_MINVERSION := $(shell jq -r ".minor_version" src/metadata.json)
+EXT_VERSION    := $(shell jq 'select(.version != null)|.version'  src/metadata.json)
+EXT_MINVERSION := $(shell jq -r 'select(.minor_version != null)|.minor_version' src/metadata.json)
 
 ifeq "${EXT_UUID}" ""
 $(error "Failed to extract extension UUID from src/metadata.json -- can't continue")
@@ -55,19 +55,14 @@ GSCHEMAS   := src/schemas/gschemas.compiled
 ZIP_CONTENT := ${SRC_FILES} ${GSCHEMAS}
 
 ESLINT_AVAILABLE     := $(shell npx --no-install eslint  2> /dev/null && echo "GOT IT")
-JSONPP_AVAILABLE     := $(shell which json_pp 2> /dev/null)
 GTKBUILDER_AVAILABLE := $(shell which gtk-builder-tool 2> /dev/null)
 
 all: check zip                           ## Run 'check' and 'zip'
 
 zip: ${EXT_ZIP}                          ## Build gnome shell extension installable zip
 
-check:                                   ## Run checks (json_pp, eslint, gtk-builder-tool)
-ifdef JSONPP_AVAILABLE
-	json_pp < ${METADATA} >/dev/null
-else
-	@echo "WARNING: json_pp not available, metadata.json not validated"
-endif
+check:                                   ## Run checks (jq, eslint, gtk-builder-tool)
+	jq < ${METADATA} >/dev/null
 ifdef GTKBUILDER_AVAILABLE
 	gtk-builder-tool validate ${UI_FILES}
 else
