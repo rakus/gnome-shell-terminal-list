@@ -5,5 +5,5 @@
     "minor_version": "0",
     "description": "Menu of GNOME Terminal Tabs",
     "license": "GPL v3",
-    "shell-version": [ "40", "41", "42", "43" ]
+    "shell-version": [ "40", "41", "42", "43", "44" ]
 }
