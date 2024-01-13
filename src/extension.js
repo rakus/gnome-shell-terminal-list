@@ -14,6 +14,7 @@
 
 const St = imports.gi.St;
 const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
@@ -26,36 +27,33 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const MySelf = ExtensionUtils.getCurrentExtension();
 
 // Definition of  D-Bus interface of SearchProvider2 implemented by
-// Gnome-Terminal
-const SearchProvider2Interface = '<node>\
-  <interface name="org.gnome.Shell.SearchProvider2"> \
-    <method name="GetInitialResultSet"> \
-      <arg type="as" name="terms" direction="in"/> \
-      <arg type="as" name="results" direction="out"/> \
-    </method> \
-    <method name="GetSubsearchResultSet"> \
-      <arg type="as" name="previous_results" direction="in"/> \
-      <arg type="as" name="terms" direction="in"/> \
-      <arg type="as" name="results" direction="out"/> \
-    </method> \
-    <method name="GetResultMetas"> \
-      <arg type="as" name="identifiers" direction="in"/> \
-      <arg type="aa{sv}" name="metas" direction="out"/> \
-    </method> \
-    <method name="ActivateResult"> \
-      <arg type="s" name="identifier" direction="in"/> \
-      <arg type="as" name="terms" direction="in"/> \
-      <arg type="u" name="timestamp" direction="in"/> \
-    </method> \
-    <method name="LaunchSearch"> \
-      <arg type="as" name="terms" direction="in"/> \
-      <arg type="u" name="timestamp" direction="in"/> \
-    </method> \
-  </interface> \
-</node>';
-
-// Declare the proxy class based on the interface
-const SearchProvider2Proxy = Gio.DBusProxy.makeProxyWrapper(SearchProvider2Interface);
+// Gnome-Terminal:
+// <node>
+//   <interface name="org.gnome.Shell.SearchProvider2">
+//     <method name="GetInitialResultSet">
+//       <arg type="as" name="terms" direction="in"/>
+//       <arg type="as" name="results" direction="out"/>
+//     </method>
+//     <method name="GetSubsearchResultSet">
+//       <arg type="as" name="previous_results" direction="in"/>
+//       <arg type="as" name="terms" direction="in"/>
+//       <arg type="as" name="results" direction="out"/>
+//     </method>
+//     <method name="GetResultMetas">
+//       <arg type="as" name="identifiers" direction="in"/>
+//       <arg type="aa{sv}" name="metas" direction="out"/>
+//     </method>
+//     <method name="ActivateResult">
+//       <arg type="s" name="identifier" direction="in"/>
+//       <arg type="as" name="terms" direction="in"/>
+//       <arg type="u" name="timestamp" direction="in"/>
+//     </method>
+//     <method name="LaunchSearch">
+//       <arg type="as" name="terms" direction="in"/>
+//       <arg type="u" name="timestamp" direction="in"/>
+//     </method>
+//   </interface>
+// </node>
 
 // "Stolen" from https://github.com/tuberry/extension-list (GPLv3)
 const PopupScrollMenuSection = class extends PopupMenu.PopupMenuSection {
@@ -115,13 +113,6 @@ let TermListMenuButton = GObject.registerClass(
             this._my_events_sigid = this.connect("event", this._onEvent.bind(this));
 
             this._prepareMenu();
-
-            // Get instance of the search provider proxy
-            this.spProxy = new SearchProvider2Proxy(
-                Gio.DBus.session,
-                "org.gnome.Terminal",
-                "/org/gnome/Terminal/SearchProvider",
-            );
 
             this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.term-list");
 
@@ -196,43 +187,73 @@ let TermListMenuButton = GObject.registerClass(
         /*
          * Open menue if it's close - Close it if it's open.
          */
-        _toggleMenu() {
+        async _toggleMenu() {
 
             if(!this.menu.isOpen) {
                 // Get all terminal tabs by searching for 'nothing' which
                 // matches everything
-                this.spProxy.GetInitialResultSetRemote([], (result, error) => {
-                    if(!error) {
-                        if(result[0].length > 0) {
-                            this._requestTermTabsMetadata(result[0]);
-                        } else {
-                            // open empty menu
-                            this._createTermTabsMenu([]);
-                        }
-                    } else if(!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
-                        log("Term-List: Error getting Terminal List Ids: " + String(error));
-                        Main.notify("Error getting Terminal List", String(error));
+
+                try {
+                    // SearchTerm is an empty array
+                    const searchTerm = new GLib.Variant("(as)", [[]]);
+
+                    const reply = await Gio.DBus.session.call(
+                        "org.gnome.Terminal",
+                        "/org/gnome/Terminal/SearchProvider",
+                        "org.gnome.Shell.SearchProvider2",
+                        "GetInitialResultSet",
+                        searchTerm,
+                        null,
+                        Gio.DBusCallFlags.NONE,
+                        -1,
+                        null);
+
+                    const value = reply.get_child_value(0);
+                    const idList = value.deepUnpack();
+                    if(idList.length > 0) {
+                        this._requestTermTabsMetadata(idList);
+                    } else {
+                        // open empty menu
+                        this._createTermTabsMenu([]);
                     }
-                });
+
+                } catch(e) {
+                    log("Term-List: Error getting Terminal List Ids: " + String(e));
+                    Main.notify("Error getting Terminal List", String(e));
+                }
             } else {
                 this.menu.close();
             }
         }
 
         /*
-         * Called with  the uuids of all tabs and requests the meta data for
+         * Called with the uuids of all tabs and requests the meta data for
          * them.
          */
-        _requestTermTabsMetadata(ids) {
-            // Get meta information for all tabs
-            this.spProxy.GetResultMetasRemote(ids, (result, error) => {
-                if(!error) {
-                    this._createTermTabsMenu(result[0]);
-                } else if(!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
-                    log("Term-List: Error getting Terminal List Ids: " + String(error));
-                    Main.notify("Error getting Terminal List", String(error));
-                }
-            });
+        async _requestTermTabsMetadata(ids) {
+
+            try {
+                const idsVariant = new GLib.Variant("(as)", [ids]);
+
+                const reply = await Gio.DBus.session.call(
+                    "org.gnome.Terminal",
+                    "/org/gnome/Terminal/SearchProvider",
+                    "org.gnome.Shell.SearchProvider2",
+                    "GetResultMetas",
+                    idsVariant,
+                    null,
+                    Gio.DBusCallFlags.NONE,
+                    -1,
+                    null);
+
+                const value = reply.get_child_value(0);
+
+                this._createTermTabsMenu(value.deepUnpack());
+
+            } catch(e) {
+                log("Term-List: Error getting Terminal List MetaData: " + String(e));
+                Main.notify("Error getting Terminal MetaData", String(e));
+            }
         }
 
         /*
@@ -244,15 +265,10 @@ let TermListMenuButton = GObject.registerClass(
             this._searchEntry.set_text("");
 
             for(let i = 0; i < metaData.length; i++) {
-                for(let prop in metaData[i]) {
-                    // All but the icon need unpacking
-                    if(prop !== "icon") {
-                        metaData[i][prop] = metaData[i][prop].deep_unpack();
-                    }
-                }
-
-                this._terminalsSubMenu.addAction(metaData[i]["name"],
-                    this._switch2Terminal.bind(this, metaData[i]["id"]), undefined);
+                let name = metaData[i]["name"].unpack();
+                let id = metaData[i]["id"].unpack();
+                this._terminalsSubMenu.addAction(name,
+                    this._switch2Terminal.bind(this, id), undefined);
             }
 
             this.menu.open();
@@ -266,8 +282,24 @@ let TermListMenuButton = GObject.registerClass(
          * may include changing virtual desktop, bringing window to front and
          * changing tab.
          */
-        _switch2Terminal(termId) {
-            this.spProxy.ActivateResultSync(termId, [], global.get_current_time());
+        async _switch2Terminal(termId) {
+            try {
+                const idVariant = new GLib.Variant("(sasu)", [termId, [], global.get_current_time()]);
+
+                await Gio.DBus.session.call(
+                    "org.gnome.Terminal",
+                    "/org/gnome/Terminal/SearchProvider",
+                    "org.gnome.Shell.SearchProvider2",
+                    "ActivateResult",
+                    idVariant,
+                    null,
+                    Gio.DBusCallFlags.NONE,
+                    -1,
+                    null);
+            } catch(e) {
+                log("Term-List: Error switching to terminal tab:  " + String(e));
+                Main.notify("Error switching to terminal tab", String(e));
+            }
         }
 
         /*
