@@ -4,7 +4,7 @@
 # https://gitlab.gnome.org/GNOME/gnome-shell-extensions/
 #
 env:
-  es6: true
+  es2021: true
 extends: 'eslint:recommended'
 rules:
   array-bracket-newline:
@@ -250,6 +250,15 @@ globals:
   print: readonly
   printerr: readonly
   window: readonly
+  TextEncoder: readonly
+  TextDecoder: readonly
+  console: readonly
+  setTimeout: readonly
+  setInterval: readonly
+  clearTimeout: readonly
+  clearInterval: readonly
   global: readonly
 parserOptions:
-  ecmaVersion: 2019
+  ecmaVersion: 2022
+  sourceType: module
+

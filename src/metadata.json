@@ -1,9 +1,10 @@
 {
     "uuid": "term-list@r3s6.de",
     "name": "Terminal-List",
-    "version": 2,
+    "version": 3,
     "minor_version": "0",
     "description": "Menu of GNOME Terminal Tabs",
     "license": "GPL v3",
-    "shell-version": [ "40", "41", "42", "43", "44" ]
+    "shell-version": [ "45" ],
+    "settings-schema": "org.gnome.shell.extensions.term-list"
 }

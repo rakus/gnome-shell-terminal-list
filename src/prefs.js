@@ -2,17 +2,21 @@
 /* Note to eslint: */
 /* exported init, buildPrefsWidget */
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Self = ExtensionUtils.getCurrentExtension();
-const GObject = imports.gi.GObject;
-const Gtk = imports.gi.Gtk;
+// const GObject = imports.gi.GObject;
+// const Gtk = imports.gi.Gtk;
+
+import GObject from "gi://GObject";
+import Gtk from "gi://Gtk";
+import Adw from "gi://Adw";
+
+import { ExtensionPreferences } from "resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js";
 
 const PREF_PANEL_LOCATION = "panel-location";
 const PREF_MENU_SHORTCUT = "toggle-term-list";
 
 const TermListPrefsWidget = GObject.registerClass({
     GTypeName: "TermListPrefsWidget",
-    Template: Self.dir.get_child("preferences.ui").get_uri(),
+    Template: import.meta.url.replace("prefs.js", "preferences.ui"),
     InternalChildren: [
         "panel_location",
         "toggle_term_list",
@@ -20,11 +24,12 @@ const TermListPrefsWidget = GObject.registerClass({
     ],
 }, class TermListPrefsWidget extends Gtk.Box {
 
-    _init(params = {}) {
-        super._init(params);
-        this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.term-list");
+    constructor(settings, params = {}) {
+        super(params);
 
-        const panelLocation = this._widget(PREF_PANEL_LOCATION);
+        this._settings = settings;
+
+        const panelLocation = this._getWidget(PREF_PANEL_LOCATION);
         panelLocation.set_active(this._settings.get_enum(PREF_PANEL_LOCATION));
         panelLocation.connect("changed", combobox => {
             this._settings.set_enum(PREF_PANEL_LOCATION, combobox.get_active());
@@ -33,7 +38,7 @@ const TermListPrefsWidget = GObject.registerClass({
         this._bindShortcut();
     }
 
-    _widget(id) {
+    _getWidget(id) {
         const name = "_" + id.replace(/-/g, "_");
         if(!this[name]) {
             throw new Error(`Unknown widget with ID "${id}"!`);
@@ -61,9 +66,9 @@ const TermListPrefsWidget = GObject.registerClass({
         model.set(row, [0, 1], [accelMods, accelKey]);
 
         // Set model on treeview
-        this._widget("treeview").set_model(model);
+        this._getWidget("treeview").set_model(model);
 
-        let widget = this._widget(PREF_MENU_SHORTCUT);
+        let widget = this._getWidget(PREF_MENU_SHORTCUT);
         widget.accel_mode = Gtk.CellRendererAccelMode.GTK;
 
         // to be used in lamdas
@@ -94,14 +99,23 @@ const TermListPrefsWidget = GObject.registerClass({
 
 });
 
-/*
- * Initialize - does nothing.
- */
-function init() {
-    // Nothing to do
+
+export default class TerminalListPreferences extends ExtensionPreferences {
+    fillPreferencesWindow(window) {
+        const settings = this.getSettings();
+        window._settings = settings;
+
+        const page = new Adw.PreferencesPage();
+        const group = new Adw.PreferencesGroup({});
+
+        const widget = new TermListPrefsWidget(settings);
+
+        group.add(widget);
+        page.add(group);
+        window.add(page);
+    }
 }
 
-function buildPrefsWidget() {
-    return new TermListPrefsWidget();
-}
+
+
 

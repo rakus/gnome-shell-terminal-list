@@ -7,61 +7,32 @@
  *
  */
 
-/* Note to eslint: */
-/* exported enable, disable */
-
 "use strict";
 
-const St = imports.gi.St;
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
-const GObject = imports.gi.GObject;
-const Main = imports.ui.main;
-const PanelMenu = imports.ui.panelMenu;
-const Clutter = imports.gi.Clutter;
-const PopupMenu = imports.ui.popupMenu;
-const Meta = imports.gi.Meta;
-const Shell = imports.gi.Shell;
+import St from "gi://St";
+import Gio from "gi://Gio";
+import GLib from "gi://GLib";
+import Meta from "gi://Meta";
+import Shell from "gi://Shell";
+import Clutter from "gi://Clutter";
+import GObject from "gi://GObject";
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const MySelf = ExtensionUtils.getCurrentExtension();
+import * as Main from "resource:///org/gnome/shell/ui/main.js";
+import * as PanelMenu from "resource:///org/gnome/shell/ui/panelMenu.js";
+import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
 
-// Definition of  D-Bus interface of SearchProvider2 implemented by
-// Gnome-Terminal:
-// <node>
-//   <interface name="org.gnome.Shell.SearchProvider2">
-//     <method name="GetInitialResultSet">
-//       <arg type="as" name="terms" direction="in"/>
-//       <arg type="as" name="results" direction="out"/>
-//     </method>
-//     <method name="GetSubsearchResultSet">
-//       <arg type="as" name="previous_results" direction="in"/>
-//       <arg type="as" name="terms" direction="in"/>
-//       <arg type="as" name="results" direction="out"/>
-//     </method>
-//     <method name="GetResultMetas">
-//       <arg type="as" name="identifiers" direction="in"/>
-//       <arg type="aa{sv}" name="metas" direction="out"/>
-//     </method>
-//     <method name="ActivateResult">
-//       <arg type="s" name="identifier" direction="in"/>
-//       <arg type="as" name="terms" direction="in"/>
-//       <arg type="u" name="timestamp" direction="in"/>
-//     </method>
-//     <method name="LaunchSearch">
-//       <arg type="as" name="terms" direction="in"/>
-//       <arg type="u" name="timestamp" direction="in"/>
-//     </method>
-//   </interface>
-// </node>
+import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
+
+// Uses the D-Bus interface SearchProvider2 of GNOME-Terminal.
+// See: /usr/share/dbus-1/interfaces/org.gnome.ShellSearchProvider2.xml
 
 // "Stolen" from https://github.com/tuberry/extension-list (GPLv3)
-const PopupScrollMenuSection = class extends PopupMenu.PopupMenuSection {
+class PopupScrollMenuSection extends PopupMenu.PopupMenuSection {
     constructor() {
         super();
 
         // take max 90% of screen height
-        let maxHeight = Math.floor(global.display.get_size()[1] * 90 / 100);
+        const maxHeight = Math.floor(global.display.get_size()[1] * 90 / 100);
         this.actor = new St.ScrollView({
             style: "max-height: %dpx".format(maxHeight),
             style_class: "extension-list-scroll-menu",
@@ -75,8 +46,8 @@ const PopupScrollMenuSection = class extends PopupMenu.PopupMenuSection {
     }
 
     _needsScrollbar() {
-        let [, topNaturalHeight] = this._getTopMenu().actor.get_preferred_height(-1);
-        let topMaxHeight = this.actor.get_theme_node().get_max_height();
+        const [, topNaturalHeight] = this._getTopMenu().actor.get_preferred_height(-1);
+        const topMaxHeight = this.actor.get_theme_node().get_max_height();
 
         return topMaxHeight >= 0 && topNaturalHeight >= topMaxHeight;
     }
@@ -92,7 +63,7 @@ const PopupScrollMenuSection = class extends PopupMenu.PopupMenuSection {
 
         super.open();
     }
-};
+}
 
 /*
  * The panel button
@@ -100,7 +71,7 @@ const PopupScrollMenuSection = class extends PopupMenu.PopupMenuSection {
 let TermListMenuButton = GObject.registerClass(
     class TermListMenuButton extends PanelMenu.Button {
 
-        _init() {
+        _init(settings) {
             super._init(0.5, "Term-List", false);
 
             this.icon = new St.Icon({
@@ -114,7 +85,7 @@ let TermListMenuButton = GObject.registerClass(
 
             this._prepareMenu();
 
-            this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.term-list");
+            this._settings = settings;
 
             Main.wm.addKeybinding("toggle-term-list", this._settings,
                 Meta.KeyBindingFlags.IGNORE_AUTOREPEAT,
@@ -159,7 +130,7 @@ let TermListMenuButton = GObject.registerClass(
                 this._onSearchFocusIn.bind(this));
 
             // create menu entry for search entry field
-            let searchEntryItem = new PopupMenu.PopupBaseMenuItem({
+            const searchEntryItem = new PopupMenu.PopupBaseMenuItem({
                 reactive: false,
                 can_focus: false,
             });
@@ -190,47 +161,75 @@ let TermListMenuButton = GObject.registerClass(
         async _toggleMenu() {
 
             if(!this.menu.isOpen) {
-                // Get all terminal tabs by searching for 'nothing' which
-                // matches everything
-
                 try {
-                    // SearchTerm is an empty array
-                    const searchTerm = new GLib.Variant("(as)", [[]]);
+                    const idList = await this._getTerminalUuids();
 
-                    const reply = await Gio.DBus.session.call(
-                        "org.gnome.Terminal",
-                        "/org/gnome/Terminal/SearchProvider",
-                        "org.gnome.Shell.SearchProvider2",
-                        "GetInitialResultSet",
-                        searchTerm,
-                        null,
-                        Gio.DBusCallFlags.NONE,
-                        -1,
-                        null);
-
-                    const value = reply.get_child_value(0);
-                    const idList = value.deepUnpack();
+                    let meta = [];
                     if(idList.length > 0) {
-                        this._requestTermTabsMetadata(idList);
-                    } else {
-                        // open empty menu
-                        this._createTermTabsMenu([]);
+                        meta = await this._getTermTabsMetadata(idList);
                     }
 
+                    this._createTermTabsMenu(meta);
+
+                    // clear text of search box
+                    this._searchEntry.set_text("");
+
+                    this.menu.open();
+
+                    // set focus to search box
+                    global.stage.set_key_focus(this._searchEntry);
+
                 } catch(e) {
-                    log("Term-List: Error getting Terminal List Ids: " + String(e));
-                    Main.notify("Error getting Terminal List", String(e));
+                    log("Term-List: Error opening Terminal-List menu: " + String(e));
+                    Main.notify("Error opening Terminal-List menu", String(e));
                 }
+
             } else {
                 this.menu.close();
             }
         }
 
         /*
+         * Gets the terminal tab UUIDs.
+         *
+         * returns: Array of terminal tab UUIDs
+         */
+        async _getTerminalUuids() {
+            try {
+                // SearchTerm is an empty array, will match all tabs
+                const searchTerm = new GLib.Variant("(as)", [[]]);
+
+                const reply = await Gio.DBus.session.call(
+                    "org.gnome.Terminal",
+                    "/org/gnome/Terminal/SearchProvider",
+                    "org.gnome.Shell.SearchProvider2",
+                    "GetInitialResultSet",
+                    searchTerm,
+                    null,
+                    Gio.DBusCallFlags.NONE,
+                    -1,
+                    null);
+
+                const value = reply.get_child_value(0);
+                const idList = value.deepUnpack();
+
+                return idList;
+
+            } catch(e) {
+                log("Term-List: Error getting Terminal List Ids: " + String(e));
+                Main.notify("Error getting Terminal List", String(e));
+                return [];
+            }
+        }
+
+        /*
          * Called with the uuids of all tabs and requests the meta data for
          * them.
+         *
+         * ids: Array of terminal tab UUIDs
+         * returns: Array of { title: '...', id: '...' }
          */
-        async _requestTermTabsMetadata(ids) {
+        async _getTermTabsMetadata(ids) {
 
             try {
                 const idsVariant = new GLib.Variant("(as)", [ids]);
@@ -248,33 +247,39 @@ let TermListMenuButton = GObject.registerClass(
 
                 const value = reply.get_child_value(0);
 
-                this._createTermTabsMenu(value.deepUnpack());
+                const metaData = value.deepUnpack();
 
+                let result = [];
+                for(let i = 0; i < metaData.length; i++) {
+                    const name = metaData[i]["name"].unpack();
+                    const id = metaData[i]["id"].unpack();
+                    result.push({ title: name, id: id });
+                }
+
+                return result;
             } catch(e) {
                 log("Term-List: Error getting Terminal List MetaData: " + String(e));
                 Main.notify("Error getting Terminal MetaData", String(e));
+                return [];
             }
         }
 
         /*
          * Called with the meta information for all tabs and creates menue
          * entries for it. Finally open the menu.
+         *
+         * metaData: Array of { title: '...', id: '...' }
+         * returns: void
          */
         _createTermTabsMenu(metaData) {
             this._terminalsSubMenu.removeAll();
-            this._searchEntry.set_text("");
 
             for(let i = 0; i < metaData.length; i++) {
-                let name = metaData[i]["name"].unpack();
-                let id = metaData[i]["id"].unpack();
+                const name = metaData[i].title;
+                const id = metaData[i].id;
                 this._terminalsSubMenu.addAction(name,
                     this._switch2Terminal.bind(this, id), undefined);
             }
-
-            this.menu.open();
-
-            // set focus to search box
-            global.stage.set_key_focus(this._searchEntry);
         }
 
         /*
@@ -307,7 +312,7 @@ let TermListMenuButton = GObject.registerClass(
          * menu content by setting the visibilty of items.
          */
         _onSearchText() {
-            let searchText = this._searchEntry.get_text().toLowerCase();
+            const searchText = this._searchEntry.get_text().toLowerCase();
 
             /*
              * Using private method PopupMenuBase._getMenuItems ... this is fragile
@@ -317,9 +322,9 @@ let TermListMenuButton = GObject.registerClass(
                     item.actor.visible = true;
                 });
             } else {
-                let regex = this._glob2regex(searchText);
+                const regex = this._glob2regex(searchText);
                 this._terminalsSubMenu._getMenuItems().forEach(item => {
-                    let text = item.label.get_text().toLowerCase();
+                    const text = item.label.get_text().toLowerCase();
                     item.actor.visible = text.search(regex) >= 0;
                 });
             }
@@ -349,7 +354,7 @@ let TermListMenuButton = GObject.registerClass(
          * Pressing Down, Up, Tab or Shift-Tab in search box leaves search box.
          */
         _onSearchFieldKeyEvent(actor, event) {
-            let key = event.get_key_symbol();
+            const key = event.get_key_symbol();
             if(key === Clutter.KEY_Down || key === Clutter.KEY_Tab) {
                 this._focusFirstItem();
                 return Clutter.EVENT_STOP;
@@ -400,7 +405,7 @@ let TermListMenuButton = GObject.registerClass(
          * Focus on last visible entry from the menu
          */
         _focusLastItem() {
-            let itemArray = this._terminalsSubMenu._getMenuItems();
+            const itemArray = this._terminalsSubMenu._getMenuItems();
             if(itemArray.length > 0) {
                 for(var i = itemArray.length - 1;  i >= 0;  i--) {
                     if(itemArray[i].visible) {
@@ -427,34 +432,35 @@ let TermListMenuButton = GObject.registerClass(
     });
 
 
-let termListMenu;
+export default class TerminalList extends Extension {
 
-function enable() {
-    let version = MySelf.metadata.version + "." + MySelf.metadata.minor_version;
-    log("Term-List: enable() [Version: " + version + "]");
+    enable() {
+        const version = this.metadata.version + "." + this.metadata.minor_version;
+        console.log(this.metadata.name + ": enable() [Version: " + version + "]");
 
-    termListMenu = new TermListMenuButton();
+        this.termListMenu = new TermListMenuButton(this.getSettings());
 
-    let settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.term-list");
+        const settings = this.getSettings();
 
-    let location = settings.get_string("panel-location");
-    if(location === "far-left") {
-        // place it on the far-left side
-        Main.panel.addToStatusArea("Term-List", termListMenu, 0, "left");
-    } else if(location === "left") {
-        // place it on the left side -- left of the application menu
-        // If application menu is not available, rightmost on the left.
-        let appMenuIndex = Main.sessionMode.panel.left.indexOf("appMenu");
-        Main.panel.addToStatusArea("Term-List", termListMenu, appMenuIndex, "left");
-    } else {
-        Main.panel.addToStatusArea("Term-List", termListMenu);
+        const location = settings.get_string("panel-location");
+        if(location === "far-left") {
+            // place it on the far-left side
+            Main.panel.addToStatusArea("Term-List", this.termListMenu, 0, "left");
+        } else if(location === "left") {
+            // place it on the left side -- left of the application menu
+            // If application menu is not available, rightmost on the left.
+            const appMenuIndex = Main.sessionMode.panel.left.indexOf("appMenu");
+            Main.panel.addToStatusArea("Term-List", this.termListMenu, appMenuIndex, "left");
+        } else {
+            Main.panel.addToStatusArea("Term-List", this.termListMenu);
+        }
     }
-}
 
-function disable() {
-    termListMenu.stop();
-    // destroy removes button from panel
-    termListMenu.destroy();
+    disable() {
+        this.termListMenu.stop();
+        // destroy removes button from panel
+        this.termListMenu.destroy();
+    }
 }
 
 /* vim: set et ts=4 sw=4: */
