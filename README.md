@@ -65,7 +65,7 @@ _Icon Location_ defines where the icon should be displayed in the top bar.
 * `right`: Somewhere on the right side of the panel.
 
 Note that the final placement might be different, depending on extensions
-enabled after Term-List.
+enabled after Terminal-List.
 
 _Menu Shortcut_ defines the shortcut to open the terminals menu. Default is
 `Ctrl+Super+T`.

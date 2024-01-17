@@ -1,5 +1,5 @@
 /*
- * Term-List Gnome Shell Extension
+ * Terminal-List Gnome Shell Extension
  *
  * Copyright (c) 2021 Ralf Schandl
  *
@@ -72,7 +72,7 @@ let TermListMenuButton = GObject.registerClass(
     class TermListMenuButton extends PanelMenu.Button {
 
         _init(settings) {
-            super._init(0.5, "Term-List", false);
+            super._init(0.5, "Terminal-List", false);
 
             this.icon = new St.Icon({
                 icon_name: "utilities-terminal",
@@ -180,7 +180,7 @@ let TermListMenuButton = GObject.registerClass(
                     global.stage.set_key_focus(this._searchEntry);
 
                 } catch(e) {
-                    log("Term-List: Error opening Terminal-List menu: " + String(e));
+                    console.log("Terminal-List: Error opening Terminal-List menu: " + String(e));
                     Main.notify("Error opening Terminal-List menu", String(e));
                 }
 
@@ -216,7 +216,7 @@ let TermListMenuButton = GObject.registerClass(
                 return idList;
 
             } catch(e) {
-                log("Term-List: Error getting Terminal List Ids: " + String(e));
+                console.log("Terminal-List: Error getting Terminal List Ids: " + String(e));
                 Main.notify("Error getting Terminal List", String(e));
                 return [];
             }
@@ -258,7 +258,7 @@ let TermListMenuButton = GObject.registerClass(
 
                 return result;
             } catch(e) {
-                log("Term-List: Error getting Terminal List MetaData: " + String(e));
+                console.log("Terminal-List: Error getting Terminal List MetaData: " + String(e));
                 Main.notify("Error getting Terminal MetaData", String(e));
                 return [];
             }
@@ -302,7 +302,7 @@ let TermListMenuButton = GObject.registerClass(
                     -1,
                     null);
             } catch(e) {
-                log("Term-List: Error switching to terminal tab:  " + String(e));
+                console.log("Terminal-List: Error switching to terminal tab:  " + String(e));
                 Main.notify("Error switching to terminal tab", String(e));
             }
         }
@@ -436,7 +436,7 @@ export default class TerminalList extends Extension {
 
     enable() {
         const version = this.metadata.version + "." + this.metadata.minor_version;
-        console.log(this.metadata.name + ": enable() [Version: " + version + "]");
+        console.log("Terminal-List: enable() [Version: " + version + "]");
 
         this.termListMenu = new TermListMenuButton(this.getSettings());
 
@@ -445,18 +445,19 @@ export default class TerminalList extends Extension {
         const location = settings.get_string("panel-location");
         if(location === "far-left") {
             // place it on the far-left side
-            Main.panel.addToStatusArea("Term-List", this.termListMenu, 0, "left");
+            Main.panel.addToStatusArea("Terminal-List", this.termListMenu, 0, "left");
         } else if(location === "left") {
             // place it on the left side -- left of the application menu
             // If application menu is not available, rightmost on the left.
             const appMenuIndex = Main.sessionMode.panel.left.indexOf("appMenu");
-            Main.panel.addToStatusArea("Term-List", this.termListMenu, appMenuIndex, "left");
+            Main.panel.addToStatusArea("Terminal-List", this.termListMenu, appMenuIndex, "left");
         } else {
-            Main.panel.addToStatusArea("Term-List", this.termListMenu);
+            Main.panel.addToStatusArea("Terminal-List", this.termListMenu);
         }
     }
 
     disable() {
+        console.log("Terminal-List: disable()");
         this.termListMenu.stop();
         // destroy removes button from panel
         this.termListMenu.destroy();
