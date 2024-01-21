@@ -435,8 +435,7 @@ let TermListMenuButton = GObject.registerClass(
 export default class TerminalList extends Extension {
 
     enable() {
-        const version = this.metadata.version + "." + this.metadata.minor_version;
-        console.log("Terminal-List: enable() [Version: " + version + "]");
+        console.log("Terminal-List: enable() [Version: " + this.metadata.version + "]");
 
         this.termListMenu = new TermListMenuButton(this.getSettings());
 

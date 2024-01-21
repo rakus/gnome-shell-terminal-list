@@ -1,9 +1,10 @@
-
-/* Note to eslint: */
-/* exported init, buildPrefsWidget */
-
-// const GObject = imports.gi.GObject;
-// const Gtk = imports.gi.Gtk;
+/*
+ * Terminal-List Gnome Shell Extension - Preferences
+ *
+ * Copyright (c) 2021 Ralf Schandl
+ *
+ * Released under GNU General Public License v3. See file LICENSE.
+ */
 
 import GObject from "gi://GObject";
 import Gtk from "gi://Gtk";
