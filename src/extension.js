@@ -41,7 +41,12 @@ class PopupScrollMenuSection extends PopupMenu.PopupMenuSection {
             clip_to_allocation: true,
         });
 
-        this.actor.add_actor(this.box);
+        if(Clutter.Container === undefined) {
+            this.actor.add_child(this.box);
+        } else {
+            this.actor.add_actor(this.box);
+        }
+
         this.actor._delegate = this;
     }
 
@@ -78,7 +83,12 @@ let TermListMenuButton = GObject.registerClass(
                 icon_name: "utilities-terminal",
                 style_class: "system-status-icon",
             });
-            this.add_actor(this.icon);
+
+            if(Clutter.Container === undefined) {
+                this.add_child(this.icon);
+            } else {
+                this.add_actor(this.icon);
+            }
 
             // register our own event handler
             this._my_events_sigid = this.connect("event", this._onEvent.bind(this));
@@ -134,7 +144,7 @@ let TermListMenuButton = GObject.registerClass(
                 reactive: false,
                 can_focus: false,
             });
-            searchEntryItem.add(this._searchEntry);
+            searchEntryItem.add_child(this._searchEntry);
 
             // add search entry to menu
             this.menu.addMenuItem(searchEntryItem);

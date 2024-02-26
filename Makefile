@@ -47,7 +47,7 @@ SCHEMAS    := $(wildcard src/schemas/*.xml)
 
 GSCHEMAS   := src/schemas/gschemas.compiled
 
-ZIP_CONTENT := ${SRC_FILES} ${GSCHEMAS}
+ZIP_CONTENT := ${SRC_FILES} ${GSCHEMAS} ${SCHEMAS}
 
 ESLINT_AVAILABLE     := $(shell npx --no-install eslint  2> /dev/null && echo "GOT IT")
 GTKBUILDER_AVAILABLE := $(shell which gtk-builder-tool 2> /dev/null)
