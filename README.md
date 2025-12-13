@@ -5,6 +5,10 @@ Adds a panel button with a menu that lists the open GNOME-Terminal tabs with
 their title. By default the button is located on the far left, even left of
 "Activities".
 
+:exclamation:  To proper switch to a listed terminal tab, you will need the
+extension [steal-my-focus-window], otherwise you just get the "Terminal is
+ready" notification.
+
 ## Menu
 
 The menu is opened on click or with the shortcut `Ctrl+Super+T`. It starts
@@ -104,3 +108,5 @@ The extension contains copied code from the Gnome Shell Extension
 [extension-list](https://github.com/tuberry/extension-list) (see class
 `PopupScrollMenuSection` in `src/extension.js`).
 
+
+[steal-my-focus-window]: https://extensions.gnome.org/extension/6385/steal-my-focus-window/
