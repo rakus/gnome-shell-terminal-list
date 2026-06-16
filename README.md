@@ -97,8 +97,8 @@ dbus-send --session --dest=org.gnome.Terminal  --print-reply=literal \
     array:string:<UUID1>,<UUID2>,...
 ```
 
-It is to be feared, that the Gnome-Terminal team will one day disallow
-searching with an empty string. Then this extension is toast.
+If the search-provider will one day disallow searching with an empty string,
+this extension is toast.
 
 ## License
 
